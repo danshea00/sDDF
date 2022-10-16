@@ -55,11 +55,11 @@ typedef struct {
     volatile struct descriptor *descr;
     uintptr_t phys;
     void **cookies;
+    unsigned int tx_lengths[TX_COUNT];
 } ring_ctx_t;
 
-ring_ctx_t rx;
-ring_ctx_t tx;
-unsigned int tx_lengths[TX_COUNT];
+ring_ctx_t *rx = (void *)(uintptr_t)0x5400000;
+ring_ctx_t *tx = (void *)(uintptr_t)0x5200000;
 
 /* Pointers to shared_ringbuffers */
 ring_handle_t rx_ring;
@@ -160,7 +160,7 @@ alloc_rx_buf(size_t buf_size, void **cookie)
 
 static void fill_rx_bufs()
 {
-    ring_ctx_t *ring = &rx;
+    ring_ctx_t *ring = rx;
     __sync_synchronize();
     while (ring->remain > 0) {
         /* request a buffer */
@@ -193,7 +193,7 @@ static void fill_rx_bufs()
 static void
 handle_rx(volatile struct enet_regs *eth)
 {
-    ring_ctx_t *ring = &rx;
+    ring_ctx_t *ring = rx;
     unsigned int head = ring->head;
 
     int num = 1;
@@ -236,13 +236,13 @@ complete_tx(volatile struct enet_regs *eth)
 {
     unsigned int cnt_org;
     void *cookie;
-    ring_ctx_t *ring = &tx;
+    ring_ctx_t *ring = tx;
     unsigned int head = ring->head;
     unsigned int cnt = 0;
 
     while (head != ring->tail) {
         if (0 == cnt) {
-            cnt = tx_lengths[head];
+            cnt = ring->tx_lengths[head];
             if ((0 == cnt) || (cnt > TX_COUNT)) {
                 /* We are not supposed to read 0 here. */
                 print("complete_tx with cnt=0 or max");
@@ -294,7 +294,7 @@ static void
 raw_tx(volatile struct enet_regs *eth, unsigned int num, uintptr_t *phys,
                   unsigned int *len, void *cookie)
 {
-    ring_ctx_t *ring = &tx;
+    ring_ctx_t *ring = tx;
 
     /* Ensure we have room */
     if (ring->remain < num) {
@@ -328,12 +328,11 @@ raw_tx(volatile struct enet_regs *eth, unsigned int num, uintptr_t *phys,
     }
 
     ring->cookies[tail] = cookie;
-    tx_lengths[tail] = num;
+    ring->tx_lengths[tail] = num;
+    __sync_synchronize();
     ring->tail = tail_new;
     /* There is a race condition here if add/remove is not synchronized. */
     ring->remain -= num;
-
-    __sync_synchronize();
 
     if (!(eth->tdar & TDAR_TDAR)) {
         eth->tdar = TDAR_TDAR;
@@ -373,7 +372,7 @@ handle_tx(volatile struct enet_regs *eth)
     void *cookie = NULL;
 
     // We need to put in an empty condition here. 
-    while ((tx.remain > 1) && !driver_dequeue(tx_ring.used_ring, &buffer, &len, &cookie)) {
+    while ((tx->remain > 1) && !driver_dequeue(tx_ring.used_ring, &buffer, &len, &cookie)) {
         uintptr_t phys = getPhysAddr(buffer);
         raw_tx(eth, 1, &phys, &len, cookie);
     }
@@ -388,21 +387,21 @@ eth_setup(void)
     sel4cp_dbg_puts("\n");
 
     /* set up descriptor rings */
-    rx.cnt = RX_COUNT;
-    rx.remain = rx.cnt - 2;
-    rx.tail = 0;
-    rx.head = 0;
-    rx.phys = shared_dma_paddr;
-    rx.cookies = (void **)rx_cookies;
-    rx.descr = (volatile struct descriptor *)hw_ring_buffer_vaddr;
+    rx->cnt = RX_COUNT;
+    rx->remain = rx->cnt - 2;
+    rx->tail = 0;
+    rx->head = 0;
+    rx->phys = shared_dma_paddr;
+    rx->cookies = (void **)rx_cookies;
+    rx->descr = (volatile struct descriptor *)hw_ring_buffer_vaddr;
 
-    tx.cnt = TX_COUNT;
-    tx.remain = tx.cnt - 2;
-    tx.tail = 0;
-    tx.head = 0;
-    tx.phys = shared_dma_paddr + (sizeof(struct descriptor) * RX_COUNT);
-    tx.cookies = (void **)tx_cookies;
-    tx.descr = (volatile struct descriptor *)(hw_ring_buffer_vaddr + (sizeof(struct descriptor) * RX_COUNT));
+    tx->cnt = TX_COUNT;
+    tx->remain = tx->cnt - 2;
+    tx->tail = 0;
+    tx->head = 0;
+    tx->phys = shared_dma_paddr + (sizeof(struct descriptor) * RX_COUNT);
+    tx->cookies = (void **)tx_cookies;
+    tx->descr = (volatile struct descriptor *)(hw_ring_buffer_vaddr + (sizeof(struct descriptor) * RX_COUNT));
 
     /* Perform reset */
     eth->ecr = ECR_RESET;

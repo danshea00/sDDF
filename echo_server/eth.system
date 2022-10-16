@@ -16,6 +16,9 @@
     <memory_region name="rx_cookies" size="0x200_000" page_size="0x200_000"/>
     <memory_region name="tx_cookies" size="0x200_000" page_size="0x200_000"/>
 
+    <memory_region name="tx_desc" size="0x200_000" page_size="0x200_000" />
+    <memory_region name="rx_desc" size="0x200_000" page_size="0x200_000" />
+
     <memory_region name="data_packet" size="0x1000"/>
 
     <memory_region name="cyclecounters" size="0x1000"/>
@@ -35,9 +38,34 @@
         <map mr="tx_avail" vaddr="0x4_400_000" perms="rw" cached="true" setvar_vaddr="tx_avail" />
         <map mr="tx_used" vaddr="0x4_600_000" perms="rw" cached="true" setvar_vaddr="tx_used" />
 
+        <map mr="tx_desc" vaddr="0x5_200_000" perms="rw" cached="true" setvar_vaddr="tx" />
+        <map mr="rx_desc" vaddr="0x5_400_000" perms="rw" cached="true" setvar_vaddr="rx" />
+
         <map mr="shared_dma" vaddr="0x2_400_000" perms="rw" cached="true" setvar_vaddr="shared_dma_vaddr" />
 
         <irq irq="152" id="1" /> <!-- ethernet interrupt -->
+
+        <map mr="uart" vaddr="0x5_000_000" perms="rw" cached="false" setvar_vaddr="uart_base" />
+
+        <!-- we need physical addresses of hw rings and dma region -->
+        <setvar symbol="hw_ring_buffer_paddr" region_paddr="hw_ring_buffer" />
+        <setvar symbol="shared_dma_paddr" region_paddr="shared_dma" />
+    </protection_domain>
+        <protection_domain name="eth2" priority="102" budget="160" period="300" pp="true">
+        <program_image path="eth2.elf" />
+        <map mr="eth0" vaddr="0x2_000_000" perms="rw" cached="false"/>
+
+        <map mr="hw_ring_buffer" vaddr="0x3_000_000" perms="rw" cached="false" setvar_vaddr="hw_ring_buffer_vaddr" />
+
+        <map mr="tx_cookies" vaddr="0x3_600_000" perms="rw" cached="true" setvar_vaddr="tx_cookies" />
+
+        <!-- shared memory for ring buffer mechanism -->
+        <map mr="tx_avail" vaddr="0x4_400_000" perms="rw" cached="true" setvar_vaddr="tx_avail" />
+        <map mr="tx_used" vaddr="0x4_600_000" perms="rw" cached="true" setvar_vaddr="tx_used" />
+
+        <map mr="shared_dma" vaddr="0x2_400_000" perms="rw" cached="true" setvar_vaddr="shared_dma_vaddr" />
+
+        <map mr="tx_desc" vaddr="0x5_200_000" perms="rw" cached="true" setvar_vaddr="tx" />
 
         <map mr="uart" vaddr="0x5_000_000" perms="rw" cached="false" setvar_vaddr="uart_base" />
 
@@ -87,6 +115,11 @@
     <channel>
         <end pd="lwip" id="4" />
         <end pd="eth" id="4" />
+    </channel>
+
+    <channel>
+        <end pd="eth2" id="2" />
+        <end pd="lwip" id="6" />
     </channel>
 
     <channel>

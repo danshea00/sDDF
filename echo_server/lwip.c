@@ -22,7 +22,7 @@
 #include "timer.h"
 
 #define IRQ    1
-#define TX_CH  2
+#define TX_CH  6
 #define RX_CH  2
 #define INIT   4
 
