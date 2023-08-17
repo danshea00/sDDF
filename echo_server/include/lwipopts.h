@@ -44,10 +44,11 @@
 #define CHECKSUM_GEN_ICMP               0
 #define CHECKSUM_GEN_ICMP6              0
 
+#define TCP_MSS 1460 /* Maximum on standard ethernet*/
 #define TCP_SND_QUEUELEN 2500
 #define MEMP_NUM_TCP_SEG TCP_SND_QUEUELEN
-#define TCP_SND_BUF (100 * TCP_MSS)
-#define TCP_WND (100 * TCP_MSS)
+#define TCP_SND_BUF 0xFFFF
+#define TCP_WND 0xFFFF
 #define LWIP_WND_SCALE 1
 #define TCP_RCV_SCALE 10
 #define PBUF_POOL_SIZE 1000
@@ -67,11 +68,9 @@
 
 /* Debugging options */
 #define LWIP_DEBUG
-/* Change this to LWIP_DBG_LEVEL_ALL to see a trace 
-#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_WARNING
+/* Change this to LWIP_DBG_LEVEL_ALL to see a trace*/ 
+/*#define LWIP_DBG_MIN_LEVEL              LWIP_DBG_LEVEL_WARNING
 
-#define DHCP_DEBUG                      LWIP_DBG_ON
-#define UDP_DEBUG                       LWIP_DBG_ON
 #define ETHARP_DEBUG                    LWIP_DBG_ON
 #define PBUF_DEBUG                      LWIP_DBG_ON
 #define IP_DEBUG                        LWIP_DBG_ON

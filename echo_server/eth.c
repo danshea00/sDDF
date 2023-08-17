@@ -29,6 +29,12 @@ uintptr_t rx_used;
 uintptr_t tx_free;
 uintptr_t tx_used;
 uintptr_t uart_base;
+uintptr_t transmit_log;
+
+struct log {
+    uint64_t transmit_bytes;
+};
+struct log *log = (void *)(uintptr_t)0x5200000;
 
 /* Make the minimum frame buffer 2k. This is a bit of a waste of memory, but ensures alignment */
 #define PACKET_BUFFER_SIZE  2048
@@ -262,6 +268,7 @@ handle_tx(volatile struct enet_regs *eth)
     void *cookie = NULL;
 
     while (!(hw_ring_full(&tx)) && !driver_dequeue(tx_ring.used_ring, &buffer, &len, &cookie)) {
+        log->transmit_bytes += len;
         raw_tx(eth, buffer, len, cookie);
     }
 }

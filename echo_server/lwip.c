@@ -493,8 +493,12 @@ void init(void)
         print("failed to start DHCP negotiation\n");
     }
 
-    setup_udp_socket();
-    setup_utilization_socket();
+    if (!strcmp(sel4cp_name, "client0")) {
+        setup_socket();
+    } else {
+        setup_udp_socket();
+        setup_utilization_socket();
+    }
 
     request_used_ntfn(&state.rx_ring);
     request_used_ntfn(&state.tx_ring);
@@ -532,6 +536,7 @@ void notified(sel4cp_channel ch)
         case TX_CH:
             process_tx_queue();
             process_rx_queue();
+            continue_benchmark();
             break;
         default:
             sel4cp_dbg_puts("lwip: received notification on unexpected channel\n");

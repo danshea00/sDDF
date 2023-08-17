@@ -640,6 +640,9 @@ tcp_write(struct tcp_pcb *pcb, const void *arg, u16_t len, u8_t apiflags)
       ((struct pbuf_rom *)p2)->payload = (const u8_t *)arg + pos;
 
       /* Second, allocate a pbuf for the headers. */
+      print("tcp_write(): optlen for header pbuf: ");
+      puthex64(optlen);
+      putC('\n');
       if ((p = pbuf_alloc(PBUF_TRANSPORT, optlen, PBUF_RAM)) == NULL) {
         /* If allocation fails, we have to deallocate the data pbuf as
          * well. */
