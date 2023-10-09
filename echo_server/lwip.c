@@ -504,6 +504,8 @@ void init(void)
 
     if (!strcmp(sel4cp_name, "client0")) {
         setup_socket();
+        setup_udp_socket();
+        setup_utilization_socket();
     } else {
         setup_udp_socket();
         setup_utilization_socket();

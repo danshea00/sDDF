@@ -77,11 +77,11 @@ uintptr_t cyclecounters_vaddr;
     "Content-length: "STR(x)"\n"\
     ","STR(y)","STR(z)
 
-/*
+struct bench *bench = (void *)(uintptr_t)0x5010000;
+
 uint64_t start;
 uint64_t idle_ccount_start;
 uint64_t idle_overflow_start;
-*/
 
 static inline void my_reverse(char s[])
 {
@@ -160,9 +160,9 @@ static err_t utilization_recv_callback(void *arg, struct tcp_pcb *pcb, struct pb
         uint64_t total = 0, idle = 0;
 
         if (!strcmp(sel4cp_name, "client0")) {
-            //total = bench->ts - start;
-            //total += ULONG_MAX * (bench->overflows - idle_overflow_start);
-            //idle = bench->ccount - idle_ccount_start;
+            total = bench->ts - start;
+            total += ULONG_MAX * (bench->overflows - idle_overflow_start);
+            idle = bench->ccount - idle_ccount_start;
         }
 
         char tbuf[16];

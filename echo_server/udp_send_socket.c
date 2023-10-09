@@ -16,7 +16,6 @@ struct log {
 static struct udp_pcb *udp_socket;
 struct log *log = (void *)(uintptr_t)0x5200000;
 
-bool ready = false;
 bool started = false;
 uint64_t bytes = 0;
 ip_addr_t _addr;
@@ -73,7 +72,7 @@ benchmark(struct udp_pcb *pcb, const ip_addr_t *addr, u16_t port)
     err_t err;
     struct pbuf *pkt;
 
-    while (bytes < 1000000000) {
+    while (bytes < 147200000) {
         pkt = pbuf_alloc(PBUF_TRANSPORT, 1472, PBUF_RAM);
         if (!pkt) {
             return;
@@ -101,7 +100,7 @@ void continue_benchmark(void) {
         benchmark(_pcb, &_addr, _port);
     }
 
-    if (bytes >= 1000000000) {
+    if (bytes >= 147200000) {
         print("Measurement stopping...\n");
 
         sel4cp_ppcall(1, sel4cp_msginfo_new(0, 0));
@@ -114,7 +113,6 @@ void continue_benchmark(void) {
         print(" driver processed: ");
         puthex64(log->transmit_bytes);
         putC('\n');
-        ready = false;
         started = false;
         bytes = 0;
     }
@@ -122,10 +120,7 @@ void continue_benchmark(void) {
 
 static void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
 {
-    if (!ready) {
-        udp_sendto(pcb, p, addr, port);
-        ready = true;
-    } else if (!started) {
+    if (!started) {
         print(sel4cp_name);
         print(" measurement starting... \n");
         log->transmit_bytes = 0;
@@ -141,24 +136,6 @@ static void udp_recv_callback(void *arg, struct udp_pcb *pcb, struct pbuf *p, co
         benchmark(_pcb, &_addr, _port);
     }
 
-    if (bytes >= 1000000000) {
-        print("Measurement stopping...\n");
-
-        sel4cp_ppcall(1, sel4cp_msginfo_new(0, 0));
-        uint64_t time_end = seL4_GetMR(0);
-
-        print("Time differemce: ");
-        puthex64(time_end - time_start);
-        print("bytes: ");
-        puthex64(bytes);
-        print("Driver processed: ");
-        puthex64(log->transmit_bytes);
-        putC('\n');
-        ready = false;
-        started = false;
-        bytes = 0;
-    }
-
     pbuf_free(p);
 }
 
@@ -172,7 +149,6 @@ int setup_socket(void)
 
     int error = udp_bind(udp_socket, IP_ANY_TYPE, SEND_PORT);
     if (error == ERR_OK) {
-        //print("UDP echo port bound to 1235\n");
         udp_recv(udp_socket, udp_recv_callback, udp_socket);
     } else {
         print("Failed to bind the UDP socket");
