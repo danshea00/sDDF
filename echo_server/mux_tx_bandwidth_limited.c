@@ -279,7 +279,11 @@ void init(void)
     state.tx_ring_clients[2].used_ring->notify_reader = true;
 
     state.client_usage[0].last_time = 0;//
+<<<<<<< HEAD
     state.client_usage[0].max_bandwidth = 100000000; // theoretically no limit... 
+=======
+    state.client_usage[0].max_bandwidth = 100000000; // theoretically no limit
+>>>>>>> spin_set_loop
     state.client_usage[0].curr_bandwidth = 0;
     state.client_usage[0].pending_timeout = false;
     state.client_usage[1].last_time = 0;//
